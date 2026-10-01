@@ -1,0 +1,63 @@
+{
+  "users": [
+    {
+      "username": "commander",
+      "password": "1234",
+      "role": "قائد اللواء",
+      "platoon": null
+    },
+    {
+      "username": "hr",
+      "password": "1234",
+      "role": "ركن البشرية",
+      "platoon": null
+    },
+    {
+      "username": "finance",
+      "password": "1234",
+      "role": "ركن المالية",
+      "platoon": null
+    },
+    {
+      "username": "mokhtas1",
+      "password": "1234",
+      "role": "مختص",
+      "platoon": 1
+    },
+    {
+      "username": "sarraf",
+      "password": "1234",
+      "role": "الصراف",
+      "platoon": null
+    }
+  ],
+  "persons": [
+    {
+      "id": 1,
+      "name": "أحمد علي",
+      "platoon_id": 1,
+      "status": "حاضر"
+    },
+    {
+      "id": 2,
+      "name": "محمد حسن",
+      "platoon_id": 1,
+      "status": "غياب"
+    },
+    {
+      "id": 3,
+      "name": "سالم خالد",
+      "platoon_id": 2,
+      "status": "حاضر"
+    },
+    {
+      "id": 4,
+      "name": "علي سعيد",
+      "platoon_id": 3,
+      "status": "إجازة"
+    }
+  ],
+  "leaves": [],
+  "vouchers": [],
+  "notifications": []
+}

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>تسجيل الدخول</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f7f7f7; margin:0; display:flex; align-items:center; justify-content:center; height:100vh; }
+    .card { background:#fff; padding:24px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06); width:320px; }
+    h1 { font-size:20px; margin:0 0 12px; text-align:center; }
+    label { display:block; margin:10px 0 6px; font-size:13px; }
+    input[type="text"], input[type="password"] { width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box; }
+    button { width:100%; margin-top:16px; padding:10px; background:#0069d9; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
+    .hint { margin-top:12px; font-size:13px; color:#666; text-align:center; }
+    .error { color:#b00020; margin-top:8px; text-align:center; }
+    .success { color:green; margin-top:8px; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-labelledby="loginTitle">
+    <h1 id="loginTitle">تسجيل الدخول</h1>
+
+    <form id="loginForm" autocomplete="off">
+      <label for="username">اسم المستخدم أو البريد</label>
+      <input id="username" name="username" type="text" required autofocus />
+
+      <label for="password">كلمة المرور</label>
+      <input id="password" name="password" type="password" required />
+
+      <button type="submit">دخول</button>
+
+      <div id="msg" aria-live="polite"></div>
+      <div class="hint">سيتم حفظ رمز الدخول (JWT) في localStorage تلقائياً.</div>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      const form = document.getElementById('loginForm');
+      const msg = document.getElementById('msg');
+
+      function showError(text) {
+        msg.textContent = text;
+        msg.className = 'error';
+      }
+      function showSuccess(text) {
+        msg.textContent = text;
+        msg.className = 'success';
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msg.textContent = '';
+        msg.className = '';
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) {
+          showError('أدخل اسم المستخدم وكلمة المرور.');
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            const err = data?.message || `فشل تسجيل الدخول (${res.status})`;
+            showError(err);
+            return;
+          }
+
+          // نتوقع response يحتوي على الحقل token (JWT)
+          const token = data?.token;
+          if (!token) {
+            showError('لم يتم استلام رمز الدخول من الخادم.');
+            return;
+          }
+
+          // احفظ الـ JWT في localStorage
+          localStorage.setItem('token', token);
+
+          showSuccess('تم تسجيل الدخول. جاري التحويل...');
+
+          // توجيه بعد ثواني قليلة. غيِّر الوجهة حسب حاجتك.
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 700);
+        } catch (err) {
+          console.error('Login error:', err);
+          showError('خطأ في الاتصال بالخادم. حاول مرة أخرى.');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

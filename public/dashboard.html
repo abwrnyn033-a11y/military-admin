@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>لوحة القائد</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#fff;
+      --muted:#6b7280;
+      --accent:#0f62fe;
+      --danger:#b00020;
+      --green:#16a34a;
+      --gap:14px;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:var(--bg);
+      color:#111827;
+      padding:24px;
+      box-sizing:border-box;
+    }
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:18px;
+    }
+    h1{margin:0;font-size:20px}
+    .controls{display:flex;gap:8px;align-items:center}
+    button{cursor:pointer;border:0;padding:8px 12px;border-radius:8px;background:var(--accent);color:#fff;font-weight:600}
+    button.secondary{background:#e6eefc;color:var(--accent);font-weight:600}
+    button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(15,98,254,0.12)}
+    #statusMsg{color:var(--muted);font-size:14px;margin-top:6px}
+    main{display:flex;flex-direction:column;gap:16px}
+    .summary{
+      display:flex;
+      gap:var(--gap);
+      align-items:stretch;
+      flex-wrap:wrap;
+    }
+    .totalCard{
+      min-width:220px;
+      background:var(--card);
+      padding:18px;
+      border-radius:10px;
+      box-shadow:0 6px 18px rgba(2,6,23,0.06);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:flex-start;
+    }
+    .totalCard .label{color:var(--muted);font-size:13px}
+    .totalCard .value{font-size:28px;font-weight:700;margin-top:6px}
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap:14px;
+    }
+    .card{
+      background:var(--card);
+      padding:14px;
+      border-radius:10px;
+      box-shadow:0 6px 18px rgba(2,6,23,0.04);
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      min-height:88px;
+    }
+    .card .label{font-size:14px;color:var(--muted)}
+    .card .count{font-size:20px;font-weight:700;margin-top:8px}
+    .card.small{min-height:72px;padding:10px}
+    .meta{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+    #error{color:var(--danger);margin-top:8px}
+    @media (max-width:520px){
+      .summary{flex-direction:column}
+      .totalCard{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>لوحة القائد</h1>
+      <div id="statusMsg" aria-live="polite">جارٍ تحميل الإحصاءات…</div>
+    </div>
+    <div class="controls" aria-hidden="false">
+      <button id="refreshBtn" title="تحديث">تحديث</button>
+      <button id="logoutBtn" class="secondary" title="تسجيل الخروج">تسجيل الخروج</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary" aria-label="ملخص القوة">
+      <div class="totalCard" role="region" aria-labelledby="totalLabel">
+        <div id="totalLabel" class="label">مجموع القوة</div>
+        <div id="totalValue" class="value">—</div>
+        <div class="meta" style="margin-top:8px">
+          <div id="attendanceMeta">الحضور الفعلي: —</div>
+          <div id="updatedAt" style="margin-right:6px">آخر تحديث: —</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 style="margin:0 0 8px 0;font-size:16px">تفاصيل الحالات</h2>
+      <div id="error" role="alert" aria-live="assertive"></div>
+      <div id="cards" class="grid" aria-live="polite" aria-label="عدادات الحالات">
+        <!-- بطاقات الحالات تُملأ هنا -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const statuses = [
+        'حاضر',
+        'غياب',
+        'إجازة',
+        'هروب',
+        'إذن',
+        'دورة',
+        'مهمة',
+        'شهيد',
+        'جريح',
+        'منتدب',
+        'سجن',
+        'إعاقة دائمة'
+      ];
+
+      const tokenKey = 'token';
+      const cardsContainer = document.getElementById('cards');
+      const totalValueEl = document.getElementById('totalValue');
+      const attendanceMetaEl = document.getElementById('attendanceMeta');
+      const updatedAtEl = document.getElementById('updatedAt');
+      const statusMsg = document.getElementById('statusMsg');
+      const errorEl = document.getElementById('error');
+      const refreshBtn = document.getElementById('refreshBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      function getToken() {
+        return localStorage.getItem(tokenKey);
+      }
+
+      function ensureAuthOrRedirect() {
+        const t = getToken();
+        if (!t) {
+          // لا يوجد توكن -> إعادة توجيه لصفحة الدخول
+          window.location.href = '/';
+          return false;
+        }
+        return true;
+      }
+
+      function clearAndShowError(msg) {
+        errorEl.textContent = msg || '';
+        statusMsg.textContent = msg ? '' : 'جارٍ تحميل الإحصاءات…';
+      }
+
+      function makeCard(label, count) {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.innerHTML = `
+          <div class="label">${label}</div>
+          <div class="count" aria-label="${label}">${count}</div>
+        `;
+        return el;
+      }
+
+      async function fetchStats() {
+        errorEl.textContent = '';
+        statusMsg.textContent = 'جارٍ تحميل الإحصاءات…';
+        if (!ensureAuthOrRedirect()) return;
+
+        const token = getToken();
+        try {
+          const res = await fetch('/api/dashboard/stats', {
+            method: 'GET',
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Accept': 'application/json'
+            }
+          });
+
+          if (res.status === 401 || res.status === 403) {
+            // توكن غير صالح أو صلاحية - ازِل التوكن وأعد التوجيه
+            localStorage.removeItem(tokenKey);
+            window.location.href = '/';
+            return;
+          }
+
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            const msg = body?.message || `فشل جلب الإحصاءات (${res.status})`;
+            clearAndShowError(msg);
+            statusMsg.textContent = '';
+            return;
+          }
+
+          const data = await res.json();
+
+          // عرض المجموع
+          const total = Number(data.total_strength ?? 0);
+          const actual = Number(data.actual_attendance ?? data['حاضر'] ?? 0);
+
+          totalValueEl.textContent = total;
+          attendanceMetaEl.textContent = 'الحضور الفعلي: ' + actual;
+          updatedAtEl.textContent = 'آخر تحديث: ' + new Date().toLocaleString();
+
+          // ملء البطاقات في ترتيب محدد
+          cardsContainer.innerHTML = '';
+          statuses.forEach(s => {
+            const cnt = Number(data[s] ?? 0);
+            cardsContainer.appendChild(makeCard(s, cnt));
+          });
+
+          statusMsg.textContent = '';
+          errorEl.textContent = '';
+        } catch (err) {
+          console.error('fetchStats error', err);
+          clearAndShowError('خطأ في الاتصال بالخادم. حاول مرة أخرى.');
+          statusMsg.textContent = '';
+        }
+      }
+
+      // أحداث
+      refreshBtn.addEventListener('click', () => {
+        fetchStats();
+      });
+
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem(tokenKey);
+        window.location.href = '/';
+      });
+
+      // تحميل أولي
+      fetchStats();
+    })();
+  </script>
+</body>
+</html>

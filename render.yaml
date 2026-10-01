@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: military-admin
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    branch: main

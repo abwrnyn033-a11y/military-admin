@@ -8,22 +8,19 @@ async function load() {
   try {
     const t = await fs.readFile(DATA_FILE, 'utf8');
     cache = JSON.parse(t);
-    return cache;
   } catch (e) {
-    // لو الملف مش موجود، أنشئ بيانات افتراضية
-    cache = {
-      users: [
-        { id: '1', username: 'admin', password: 'admin123', role: 'admin', platoon: null },
-        { id: '2', username: 'commander', password: '123456', role: 'commander', platoon: null }
-      ],
-      soldiers: [],
-      finance: [],
-      attendance: [],
-      notifications: []
-    };
-    await save(cache);
-    return cache;
+    cache = { users: [], soldiers: [], finance: [], attendance: [], notifications: [] };
   }
+  if (!cache.users) cache.users = [];
+  if (!cache.users.find(u => u.username === 'admin')) {
+    cache.users.push({ id: '1', username: 'admin', password: 'admin123', role: 'admin', platoon: null });
+    await save(cache);
+  }
+  if (!cache.users.find(u => u.username === 'commander')) {
+    cache.users.push({ id: '2', username: 'commander', password: '123456', role: 'commander', platoon: null });
+    await save(cache);
+  }
+  return cache;
 }
 
 async function save(d) {
@@ -36,8 +33,4 @@ async function getUserByUsername(username) {
   return (data.users || []).find(u => u.username === username);
 }
 
-async function getUserByUser(username) {
-  return getUserByUsername(username);
-}
-
-module.exports = { load, save, DATA_FILE, getUserByUsername, getUserByUser, getUserById: async (id) => { const data = await load(); return (data.users||[]).find(u=>u.id===id); } };
+module.exports = { load, save, DATA_FILE, getUserByUsername, getUserById: async (id) => { const data = await load(); return (data.users||[]).find(u=>u.id===id); } };

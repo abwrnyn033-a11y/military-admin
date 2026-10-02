@@ -1,386 +1,77 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>قائمة الأفراد</title>
-  <style>
-    :root{
-      --bg:#f5f7fb;
-      --card:#fff;
-      --muted:#6b7280;
-      --accent:#0f62fe;
-      --danger:#b00020;
-      --success:#16a34a;
-    }
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background:var(--bg);
-      color:#111827;
-      padding:20px;
-      box-sizing:border-box;
-      direction:rtl;
-    }
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-    h1{margin:0;font-size:20px}
-    .controls{display:flex;gap:8px;align-items:center}
-    input[type="number"], input[type="text"], input[type="date"]{padding:8px;border:1px solid #e5e7eb;border-radius:6px}
-    button{cursor:pointer;border:0;padding:8px 12px;border-radius:8px;background:var(--accent);color:#fff;font-weight:600}
-    button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(15,98,254,0.12)}
-    .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.04)}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{padding:10px 8px;text-align:right;border-bottom:1px solid #f1f5f9}
-    th{background:transparent;color:var(--muted);font-weight:700}
-    .actions{display:flex;gap:8px;justify-content:flex-end}
-    .btn-leave{background:#0ea5a3;color:#fff;padding:6px 10px;border-radius:8px;border:0}
-    .btn-refresh{background:#06b6d4}
-    #msg{margin-top:8px;font-size:14px}
-    #msg.error{color:var(--danger)}
-    #msg.success{color:var(--success)}
-    /* Modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:none;align-items:center;justify-content:center;z-index:60}
-    .modal{background:var(--card);padding:18px;border-radius:10px;min-width:320px;max-width:94%;box-shadow:0 8px 26px rgba(2,6,23,0.3)}
-    .modal h3{margin:0 0 8px 0}
-    .modal .row{display:flex;gap:8px;margin:8px 0}
-    .modal label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block}
-    .modal-actions{display:flex;gap:8px;justify-content:flex-start;margin-top:12px}
-    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @media (max-width:600px){ th,td{font-size:14px;padding:8px} .controls{flex-wrap:wrap} }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الأفراد - النظام العسكري</title>
+<style>
+body{font-family:system-ui;background:#f5f7fb;margin:0;padding:15px}
+.nav{background:#fff;padding:10px;border-radius:12px;display:flex;gap:8px;margin-bottom:15px;box-shadow:0 2px 8px #0001}
+.nav a{padding:8px 14px;border-radius:8px;text-decoration:none;color:#333;background:#eef2ff}
+.nav a.active{background:#2563eb;color:#fff}
+.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px;box-shadow:0 2px 8px #0001}
+input,select,button{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:1px solid #ddd;box-sizing:border-box}
+button{background:#2563eb;color:#fff;border:none;font-weight:bold;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid #eee;text-align:right;font-size:14px}
+</style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>قائمة الأفراد</h1>
-      <div id="msg" aria-live="polite"></div>
-    </div>
+<div class="nav">
+<a href="/dashboard.html">لوحة القائد</a>
+<a href="/persons.html" class="active">الأفراد</a>
+<a href="/finance.html">المالية</a>
+<a href="/" onclick="localStorage.clear()">خروج</a>
+</div>
 
-    <div class="controls" role="region" aria-label="عناصر التحكم">
-      <input id="platoonFilter" type="number" min="1" placeholder="فلتر بالكتبية (platoon id)" />
-      <button id="applyFilterBtn" class="ghost">فلتر</button>
-      <button id="clearFilterBtn" class="ghost">مسح</button>
-      <button id="refreshBtn" class="btn-refresh">تحديث</button>
-      <button id="logoutBtn" class="ghost">تسجيل الخروج</button>
-    </div>
-  </header>
+<div class="card">
+<h3>إضافة فرد جديد</h3>
+<input id="name" placeholder="الاسم الكامل">
+<input id="militaryId" placeholder="الرقم العسكري">
+<input id="rank" placeholder="الرتبة - مثال: جندي">
+<input id="unit" placeholder="الوحدة">
+<button onclick="addPerson()">إضافة</button>
+</div>
 
-  <section class="card" aria-labelledby="listTitle">
-    <h2 id="listTitle" style="margin:0 0 6px 0">الأفراد</h2>
+<div class="card">
+<h3>قائمة الأفراد <span id="count"></span></h3>
+<table>
+<thead><tr><th>الاسم</th><th>الرقم</th><th>الرتبة</th><th>إجراء</th></tr></thead>
+<tbody id="list"><tr><td colspan="4">جاري التحميل...</td></tr></tbody>
+</table>
+</div>
 
-    <div style="overflow:auto">
-      <table id="personsTable" role="table" aria-describedby="listTitle">
-        <thead>
-          <tr>
-            <th scope="col">معرف</th>
-            <th scope="col">الاسم</th>
-            <th scope="col">الكتبية</th>
-            <th scope="col">الحالة</th>
-            <th scope="col">إجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="personsBody">
-          <!-- rows -->
-        </tbody>
-      </table>
-    </div>
-  </section>
+<script>
+const token = localStorage.getItem('token') || localStorage.getItem('jwt') || localStorage.getItem('authToken');
+if(!token) location.href='/';
+const headers = {'Content-Type':'application/json','Authorization':'Bearer '+token};
 
-  <!-- Leave Modal -->
-  <div id="leaveModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal" role="document" aria-labelledby="leaveModalTitle">
-      <h3 id="leaveModalTitle">منح إجازة</h3>
+async function load(){
+try{
+const res = await fetch('/api/persons',{headers});
+const data = await res.json();
+const persons = data.persons || data.data || data || [];
+document.getElementById('count').innerText='('+persons.length+')';
+document.getElementById('list').innerHTML = persons.length? persons.map(p=>`
+<tr><td>${p.name||''}</td><td>${p.militaryId||p.military_number||''}</td><td>${p.rank||''}</td>
+<td><button onclick="delPerson('${p._id||p.id}')" style="background:#ef4444;padding:5px">حذف</button></td></tr>
+`).join('') : '<tr><td colspan="4">لا يوجد أفراد - أضف أول فرد</td></tr>';
+}catch(e){document.getElementById('list').innerHTML='<tr><td colspan="4">خطأ: '+e.message+'</td></tr>'}
+}
 
-      <form id="leaveForm">
-        <input type="hidden" id="leavePersonId" />
+async function addPerson(){
+const body={name:document.getElementById('name').value, militaryId:document.getElementById('militaryId').value, rank:document.getElementById('rank').value, unit:document.getElementById('unit').value};
+if(!body.name) return alert('اكتب الاسم');
+const res=await fetch('/api/persons',{method:'POST',headers,body:JSON.stringify(body)});
+if(res.ok){document.getElementById('name').value='';document.getElementById('militaryId').value='';load();}else{const err=await res.text();alert('خطأ: '+err)}
+}
 
-        <div>
-          <label for="startDate">تاريخ البداية</label>
-          <input id="startDate" name="startDate" type="date" required />
-        </div>
-
-        <div>
-          <label for="endDate">تاريخ النهاية</label>
-          <input id="endDate" name="endDate" type="date" required />
-        </div>
-
-        <div>
-          <label for="reason">السبب (اختياري)</label>
-          <input id="reason" name="reason" type="text" placeholder="سبب الإجازة" />
-        </div>
-
-        <div class="modal-actions">
-          <button id="submitLeaveBtn" type="submit">إرسال</button>
-          <button id="cancelLeaveBtn" type="button" class="ghost">إلغاء</button>
-          <div id="leaveFormMsg" style="margin-left:8px" aria-live="polite"></div>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    (function () {
-      const tokenKey = 'token';
-
-      const personsBody = document.getElementById('personsBody');
-      const platoonFilter = document.getElementById('platoonFilter');
-      const applyFilterBtn = document.getElementById('applyFilterBtn');
-      const clearFilterBtn = document.getElementById('clearFilterBtn');
-      const refreshBtn = document.getElementById('refreshBtn');
-      const logoutBtn = document.getElementById('logoutBtn');
-      const msgEl = document.getElementById('msg');
-
-      const leaveModalBackdrop = document.getElementById('leaveModalBackdrop');
-      const leaveForm = document.getElementById('leaveForm');
-      const leavePersonId = document.getElementById('leavePersonId');
-      const startDateInput = document.getElementById('startDate');
-      const endDateInput = document.getElementById('endDate');
-      const reasonInput = document.getElementById('reason');
-      const submitLeaveBtn = document.getElementById('submitLeaveBtn');
-      const cancelLeaveBtn = document.getElementById('cancelLeaveBtn');
-      const leaveFormMsg = document.getElementById('leaveFormMsg');
-
-      function getToken() {
-        return localStorage.getItem(tokenKey);
-      }
-
-      function ensureAuthOrRedirect() {
-        const t = getToken();
-        if (!t) {
-          window.location.href = '/';
-          return false;
-        }
-        return true;
-      }
-
-      function showMessage(text, type) {
-        msgEl.textContent = text || '';
-        msgEl.className = type ? (type === 'error' ? 'error' : 'success') : '';
-      }
-
-      function openLeaveModal(person) {
-        leavePersonId.value = person.id;
-        // default dates: today for both
-        const today = new Date().toISOString().slice(0,10);
-        startDateInput.value = today;
-        endDateInput.value = today;
-        reasonInput.value = '';
-        leaveFormMsg.textContent = '';
-        submitLeaveBtn.disabled = false;
-        leaveModalBackdrop.style.display = 'flex';
-        leaveModalBackdrop.setAttribute('aria-hidden', 'false');
-        startDateInput.focus();
-      }
-
-      function closeLeaveModal() {
-        leaveModalBackdrop.style.display = 'none';
-        leaveModalBackdrop.setAttribute('aria-hidden', 'true');
-      }
-
-      async function fetchPersons(platoon) {
-        if (!ensureAuthOrRedirect()) return;
-        showMessage('جارٍ جلب الأفراد...', null);
-        personsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px">جارٍ التحميل…</td></tr>';
-
-        const token = getToken();
-        try {
-          const qs = platoon ? ('?platoon=' + encodeURIComponent(platoon)) : '';
-          const res = await fetch('/api/persons' + qs, {
-            method: 'GET',
-            headers: {
-              'Authorization': 'Bearer ' + token,
-              'Accept': 'application/json'
-            }
-          });
-
-          if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem(tokenKey);
-            window.location.href = '/';
-            return;
-          }
-
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            showMessage(body?.message || 'فشل جلب الأفراد', 'error');
-            personsBody.innerHTML = '';
-            return;
-          }
-
-          const data = await res.json();
-          renderPersons(data);
-          showMessage('', null);
-        } catch (err) {
-          console.error('fetchPersons error', err);
-          showMessage('خطأ في الاتصال بالخادم.', 'error');
-          personsBody.innerHTML = '';
-        }
-      }
-
-      function renderPersons(list) {
-        if (!Array.isArray(list) || list.length === 0) {
-          personsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--muted)">لا توجد سجلات</td></tr>';
-          return;
-        }
-
-        personsBody.innerHTML = '';
-        list.forEach(p => {
-          const tr = document.createElement('tr');
-
-          const idTd = document.createElement('td');
-          idTd.textContent = p.id ?? '';
-          tr.appendChild(idTd);
-
-          const nameTd = document.createElement('td');
-          nameTd.textContent = p.name ?? '';
-          tr.appendChild(nameTd);
-
-          const platoonTd = document.createElement('td');
-          // podpor: some APIs may return platoon or platoon_id
-          platoonTd.textContent = p.platoon ?? p.platoon_id ?? '';
-          tr.appendChild(platoonTd);
-
-          const statusTd = document.createElement('td');
-          statusTd.textContent = p.status ?? '';
-          tr.appendChild(statusTd);
-
-          const actionsTd = document.createElement('td');
-          actionsTd.className = 'actions';
-
-          // إجازة button
-          const leaveBtn = document.createElement('button');
-          leaveBtn.className = 'btn-leave';
-          leaveBtn.type = 'button';
-          leaveBtn.textContent = 'إجازة';
-          leaveBtn.addEventListener('click', () => openLeaveModal(p));
-          actionsTd.appendChild(leaveBtn);
-
-          tr.appendChild(actionsTd);
-          personsBody.appendChild(tr);
-        });
-      }
-
-      // Leave form submit
-      leaveForm.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        leaveFormMsg.textContent = '';
-        submitLeaveBtn.disabled = true;
-        submitLeaveBtn.innerHTML = 'جارٍ الإرسال <span class="spinner" aria-hidden="true"></span>';
-
-        if (!ensureAuthOrRedirect()) return;
-
-        const personId = leavePersonId.value;
-        const start = startDateInput.value;
-        const end = endDateInput.value;
-        const reason = reasonInput.value.trim();
-
-        if (!start || !end) {
-          leaveFormMsg.textContent = 'أكمل تواريخ البداية والنهاية.';
-          leaveFormMsg.className = 'error';
-          submitLeaveBtn.disabled = false;
-          submitLeaveBtn.textContent = 'إرسال';
-          return;
-        }
-
-        if (start > end) {
-          leaveFormMsg.textContent = 'تاريخ البداية يجب أن يكون قبل أو يساوي تاريخ النهاية.';
-          leaveFormMsg.className = 'error';
-          submitLeaveBtn.disabled = false;
-          submitLeaveBtn.textContent = 'إرسال';
-          return;
-        }
-
-        try {
-          const token = getToken();
-          const res = await fetch('/api/persons/' + encodeURIComponent(personId) + '/leave', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token,
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-              start_date: start,
-              end_date: end,
-              reason: reason || undefined
-            })
-          });
-
-          if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem(tokenKey);
-            window.location.href = '/';
-            return;
-          }
-
-          const body = await res.json().catch(() => ({}));
-
-          if (!res.ok) {
-            leaveFormMsg.textContent = body?.message || ('فشل منح الإجازة (' + res.status + ')');
-            leaveFormMsg.className = 'error';
-            submitLeaveBtn.disabled = false;
-            submitLeaveBtn.textContent = 'إرسال';
-            return;
-          }
-
-          // نجاح
-          leaveFormMsg.textContent = 'تم منح الإجازة.';
-          leaveFormMsg.className = 'success';
-          submitLeaveBtn.textContent = 'تم';
-          // أغلق المودال بعد لحظة وأعد تحميل القائمة
-          setTimeout(() => {
-            closeLeaveModal();
-            fetchPersons(platoonFilter.value || undefined);
-          }, 700);
-        } catch (err) {
-          console.error('leave submit error', err);
-          leaveFormMsg.textContent = 'خطأ في الاتصال بالخادم.';
-          leaveFormMsg.className = 'error';
-          submitLeaveBtn.disabled = false;
-          submitLeaveBtn.textContent = 'إرسال';
-        }
-      });
-
-      // modal cancel
-      cancelLeaveBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        closeLeaveModal();
-      });
-
-      // close modal on backdrop click
-      leaveModalBackdrop.addEventListener('click', (ev) => {
-        if (ev.target === leaveModalBackdrop) closeLeaveModal();
-      });
-
-      // keyboard: Esc to close
-      document.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Escape' && leaveModalBackdrop.style.display === 'flex') {
-          closeLeaveModal();
-        }
-      });
-
-      applyFilterBtn.addEventListener('click', () => {
-        const val = platoonFilter.value.trim();
-        fetchPersons(val || undefined);
-      });
-
-      clearFilterBtn.addEventListener('click', () => {
-        platoonFilter.value = '';
-        fetchPersons();
-      });
-
-      refreshBtn.addEventListener('click', () => {
-        fetchPersons(platoonFilter.value || undefined);
-      });
-
-      logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem(tokenKey);
-        window.location.href = '/';
-      });
-
-      // initial load
-      fetchPersons();
-    })();
-  </script>
+async function delPerson(id){
+if(!confirm('حذف؟')) return;
+await fetch('/api/persons/'+id,{method:'DELETE',headers});
+load();
+}
+load();
+</script>
 </body>
 </html>
